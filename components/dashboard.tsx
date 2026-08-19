@@ -17,7 +17,7 @@ export default function Dashboard() {
   useEffect(() => { if (!options) return; setLoading(true); fetch(`/api/dashboard?${query}`).then(r => r.json()).then(setData).catch(console.error).finally(() => setLoading(false)); }, [options, query]);
   const update = (key: string) => (value: string) => setFilter(old => ({ ...old, [key]: value }));
   const reset = () => options && setFilter({ start: options.range.start, end: options.range.end });
-  if (!options || !data) return <main className="loading"><div className="mark">P</div><p>Preparing your analytics workspace…</p></main>;
+  if (!options || !data) return <main className="loading"><div className="mark">BT</div><p>Preparing Burger Town analytics…</p></main>;
   const cards = [['Revenue', money(data.metrics.revenue), 'Gross line-item sales'], ['Orders', compact(data.metrics.orders), 'Unique bills'], ['Average order', money(data.metrics.averageOrder), 'Revenue per bill'], ['Items sold', compact(data.metrics.items), `${compact(data.metrics.records)} line items`]];
   return <main>
     <section className="hero"><div><h1>Burger Town</h1><p className="sub">Data analysis of 300K dataset</p></div><div className="hero-actions"><button className="reset" onClick={reset}>↺ Reset filters</button></div></section>
