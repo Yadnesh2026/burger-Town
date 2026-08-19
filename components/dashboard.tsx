@@ -10,7 +10,6 @@ const compact = (n: number) => new Intl.NumberFormat('en-IN', { notation: 'compa
 const Select = ({ label, value, values, onChange }: { label: string; value: string; values: string[]; onChange: (v: string) => void }) => <label><span>{label}</span><select value={value} onChange={e => onChange(e.target.value)}><option value="">All {label.toLowerCase()}s</option>{values.map(v => <option key={v}>{v}</option>)}</select></label>;
 
 
-
 export default function Dashboard() {
   const [options, setOptions] = useState<Options | null>(null); const [data, setData] = useState<Data | null>(null); const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Record<string, string>>({});
