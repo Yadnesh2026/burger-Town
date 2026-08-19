@@ -2,7 +2,7 @@
 
 This is a small analytics dashboard built from Burger Town's order data. The file has around 300,000 line-item records, so the main focus was to make the dashboard useful without sending a huge Excel file to the browser.
 
-Live site: https://burger-town-beta.vercel.app/  
+Live site: https://burger-town-beta.vercel.app
 GitHub repo: https://github.com/Yadnesh2026/burger-Town
 
 ## What it shows
