@@ -5,3 +5,5 @@ data/*.xlsx
 data/*.xls
 .env*
 !.env.example
+
+.vercel
