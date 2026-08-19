@@ -1,25 +1,24 @@
-# Burger Town — Business Analytics Dashboard
+# Burger Town Analytics Dashboard
 
-**Live application:** https://burger-town-beta.vercel.app/  
-**Repository:** https://github.com/Yadnesh2026/burger-Town
+This is a small analytics dashboard built from Burger Town's order data. The file has around 300,000 line-item records, so the main focus was to make the dashboard useful without sending a huge Excel file to the browser.
 
-A responsive Next.js dashboard that turns Burger Town's 300,000 restaurant line-item records into fast, filterable sales insights.
+Live site: https://burger-town-beta.vercel.app/  
+GitHub repo: https://github.com/Yadnesh2026/burger-Town
 
-## Features
+## What it shows
 
-- KPI cards for total line records, gross revenue, unique orders, average order value, and items sold
-- Date range, outlet, brand, menu category, and order-type filters
-- Daily revenue trend line chart, category revenue doughnut chart, outlet ranking bar chart, and payment-channel breakdown
-- Responsive interface with loading feedback and interactive chart tooltips
+- Total revenue, order count, average order value, items sold, and number of records
+- Revenue by day
+- Revenue split by menu category
+- Best-performing outlets
+- Payment/settlement breakdown
+- Filters for date, outlet, brand, category, and order type
 
-## Setup and run locally
+An order can contain many rows in the source sheet. I use `BillNo` to count unique orders and use `Price × Quantity` for each row's revenue.
 
-### Prerequisites
+## Running it locally
 
-- Node.js 18.18 or later (Node.js 20+ recommended)
-- npm
-
-### Installation
+You need Node.js 18.18+ and npm.
 
 ```bash
 git clone https://github.com/Yadnesh2026/burger-Town.git
@@ -28,72 +27,63 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Then visit http://localhost:3000.
 
-The repository includes the source workbook at `data/transactions.xlsx`. To use a different workbook without replacing it, set `DATA_FILE` before starting the app:
+The assessment dataset is already included as `data/transactions.xlsx`. If you want to use another copy of the file, set the path before starting the app:
 
 ```powershell
-$env:DATA_FILE = "C:\path\to\your\data.xlsx"
+$env:DATA_FILE = "C:\path\to\data.xlsx"
 npm run dev
 ```
 
-For a production check, run:
+To check the production build locally:
 
 ```bash
 npm run build
 npm run start
 ```
 
-## Architecture and data handling
+## How I handled the data
 
-The app uses **Next.js App Router** as both the frontend and API layer.
+I kept this intentionally simple for the assessment. On the server, the app reads the first worksheet with the `xlsx` package, cleans up the values it needs, and keeps the normalised rows in memory. That means the file is read once instead of being opened again for every filter change.
 
-```text
-Excel workbook → server-side normalization → in-memory cache → aggregate API routes → React/Recharts dashboard
-```
+The API routes do the aggregation work. The frontend asks for the small result it needs for the KPI cards and charts; it does not receive the full workbook. There are two routes:
 
-1. `lib/data.ts` reads the first Excel sheet only on the server using the `xlsx` library.
-2. The ingestion layer normalizes `BillNo`, `Outlet_Name`, `Brand`, `Order_Datetime`, `Group`, `Item`, `Order_Type`, `Settlement`, `Price`, and `Quantity`. It supports Excel serial dates and `DD-MM-YYYY HH:MM` date text.
-3. Line revenue is calculated as `Price × Quantity`.
-4. The normalized 300K-row dataset is retained in process memory, avoiding a workbook read on every dashboard request.
-5. `/api/filters` supplies available filter values; `/api/dashboard` applies filters and returns only aggregated KPIs and chart series. The browser never receives the full raw dataset.
-6. The 50 most recent filter responses are memoized and API responses include short cache headers.
+- `/api/filters` returns the values used by the filter controls.
+- `/api/dashboard` applies the selected filters and returns the metrics and chart data.
 
-## Why no database?
+I also cache recent filter combinations in memory. This makes repeat filter requests quick. During local testing, a repeated filtered request took about 27 ms.
 
-For this assessment, an in-memory server-side workbook cache is the right trade-off: it keeps the architecture small, eliminates database setup/migration work, and delivers fast filter interactions for a stable 300K-row source. The deployed application has been verified against all 300,000 rows.
+Dates in the source file can arrive as Excel date values or as `DD-MM-YYYY HH:MM`, so the loader handles both. The data layer is in `lib/data.ts`.
 
-For a larger multi-user production system or frequently changing data, I would introduce a small ETL job that imports the workbook to PostgreSQL, add indexes on order date, outlet, brand, category, and order type, and maintain a daily aggregate/materialized-view table. That design supports concurrent instances, refreshes without restarts, and larger datasets, at the cost of infrastructure and operational complexity.
+## Why I did not use a database
 
-## Assumptions and metric definitions
+For a stable assessment file of this size, a database would add setup work without making the dashboard much better. Reading and caching 300K rows on the server was enough to keep the client light and the filter experience smooth.
 
-- Each workbook row is a **line item**, not a complete order.
-- `BillNo` identifies an order; unique orders are calculated with distinct `BillNo` values.
-- Gross revenue is the sum of `Price × Quantity` across matching line items.
-- Average order value is gross revenue divided by unique orders.
-- The first worksheet contains the expected source data and column names.
-- Currency is displayed as INR because the supplied price data is treated as Indian rupees.
+The trade-off is that the server needs to restart before it sees a changed workbook, and in-memory data is not shared between separate server instances. If this became a regularly updated, multi-user product, I would add a small ETL process and store the rows in PostgreSQL. I would index date, outlet, brand, category, and order type, then keep a daily revenue aggregate for the charts.
 
-## Performance and trade-offs
+## Assumptions
 
-- **Chosen:** parse once and aggregate server-side. This makes client payloads small and repeat filter requests fast; locally, cached filter requests measured roughly 27 ms.
-- **Trade-off:** server memory increases with source size, and the app must restart to pick up a changed workbook.
-- **Chosen:** include the 15 MB assessment workbook in the repository so Vercel can serve the real data in the Git-based deployment.
-- **Trade-off:** committing raw data is practical for this assessment but would usually be replaced by secured object storage or a database in production.
+- Every row is one order line item, not one order.
+- `BillNo` is the order identifier.
+- Revenue is calculated as `Price × Quantity`.
+- Average order value is total revenue divided by unique bills.
+- Prices are displayed in INR based on the supplied data.
+- The source data is in the first worksheet and uses the supplied column names.
 
 ## Deployment
 
-The project is deployed from the `main` branch of this GitHub repository through Vercel:
+The app is deployed on Vercel from the `main` branch of this repository:
 
 https://burger-town-beta.vercel.app/
 
-Vercel detects Next.js automatically. No `DATA_FILE` environment variable is required for this deployment because `data/transactions.xlsx` is committed in the repository. Every push to `main` triggers a new deployment.
+The Excel file is committed in the repository so the Vercel deployment uses the actual 300,000-row dataset. A push to `main` starts a new deployment automatically.
 
-## Project structure
+## Folder layout
 
 ```text
-app/                   Next.js pages, global styles, and API routes
-components/dashboard   Client-side filters and Recharts visualizations
-lib/data.ts            Workbook ingestion, normalization, aggregation, caching
-data/transactions.xlsx Source dataset (300,000 records)
+app/                   Pages, styles, and API routes
+components/dashboard   Dashboard UI and charts
+lib/data.ts            Excel reading, normalisation, caching, and aggregation
+data/transactions.xlsx Source workbook
 ```
