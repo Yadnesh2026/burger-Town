@@ -1,0 +1,6 @@
+node_modules/
+.next/
+data/*.xlsx
+data/*.xls
+.env*
+!.env.example
