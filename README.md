@@ -1,6 +1,6 @@
 # Burger Town — Business Analytics Dashboard
 
-Live URL: _Add your deployment URL here after deployment._
+Live URL: https://burger-town-analytics.vercel.app
 
 Burger Town Analytics is a Next.js dashboard for high-volume restaurant line-item sales data. It turns the supplied Excel workbook into an interactive view of revenue, orders, outlet performance, product category mix, payment channels, and daily sales.
 
